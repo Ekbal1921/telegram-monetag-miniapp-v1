@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="High eCPM Telegram Mini App with advanced ad monetization, Monetag integration, and secure Telegram WebApp architecture.">
+  <meta name="theme-color" content="#0b0e17">
+  <title>Nexus Rewards | High eCPM Telegram Mini App</title>
+
+  <!-- Google Fonts: Inter & Outfit for modern UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Dynamic Ambient Background Glow -->
+  <div class="ambient-glow glow-cyan"></div>
+  <div class="ambient-glow glow-purple"></div>
+
+  <!-- Particle / Confetti Canvas for Reward Explosions -->
+  <canvas id="particleCanvas"></canvas>
+
+  <div id="appContainer" class="app-container">
+    <!-- Top Header: Telegram User & Currency Bar -->
+    <header class="app-header">
+      <div class="user-pill" id="userPill">
+        <div class="avatar-wrapper">
+          <div class="user-avatar" id="userAvatar">TG</div>
+          <span class="premium-badge" id="premiumBadge" title="Telegram Premium">★</span>
+        </div>
+        <div class="user-info">
+          <span class="user-name" id="userName">Crypto Miner</span>
+          <span class="user-tag" id="userTag">@tg_miner</span>
+        </div>
+      </div>
+
+      <!-- Quick Monetag Setup Button -->
+      <button class="monetag-setup-btn" id="btnOpenMonetagSetup" title="Configure Monetag Ad IDs">
+        <span class="setup-icon">⚙️</span>
+        <span class="setup-text">Monetag Setup</span>
+      </button>
+
+      <div class="balance-container">
+        <div class="balance-badge coin-badge" title="Coins">
+          <svg class="badge-icon icon-coin" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="12" r="10" fill="#f59e0b"/>
+            <path d="M12 6v12M8.5 9.5h7a2 2 0 0 1 0 4h-7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span id="coinBalance" class="balance-text">1,250</span>
+        </div>
+
+        <div class="balance-badge gem-badge" title="Gems">
+          <svg class="badge-icon icon-gem" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="6,3 18,3 22,9 12,21 2,9" fill="#00e5ff"/>
+            <polyline points="12,21 7,9 12,3 17,9 12,21" fill="none" stroke="#ffffff" stroke-width="1.2"/>
+          </svg>
+          <span id="gemBalance" class="balance-text">14</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Monetag Status & High eCPM Active Banner -->
+    <div class="ecpm-live-pill" id="ecpmLivePill">
+      <div class="pulse-dot"></div>
+      <span class="pill-title">MONETAG NETWORK:</span>
+      <span class="pill-value" id="currentEcpmDisplay">LIVE HIGH eCPM</span>
+      <span class="pill-boost-badge" id="monetagActiveModeBadge">Direct Link / Rewarded</span>
+    </div>
+
+    <!-- Main Views Container -->
+    <main class="main-content">
+      <!-- VIEW 1: EARN & TAP-TO-MINE -->
+      <section id="viewEarn" class="app-view active">
+        <!-- Energy & Multiplier Bar -->
+        <div class="status-card glass-card">
+          <div class="status-row">
+            <div class="status-item">
+              <span class="status-label">Energy</span>
+              <div class="energy-bar-wrap">
+                <div class="energy-bar-fill" id="energyFill" style="width: 80%;"></div>
+              </div>
+              <span class="status-sub" id="energyText">80 / 100</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-item">
+              <span class="status-label">Mining Rate</span>
+              <div class="multiplier-tag" id="activeMultiplierTag">
+                <span class="multiplier-icon">⚡</span>
+                <span id="multiplierValue">1x Normal</span>
+              </div>
+              <span class="status-sub timer-sub" id="multiplierTimer">Boost expired</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Mining Orb / Tapper -->
+        <div class="mining-section">
+          <div class="mining-orb-wrap">
+            <div class="orb-pulse-rings">
+              <div class="pulse-ring ring-1"></div>
+              <div class="pulse-ring ring-2"></div>
+            </div>
+            <button id="tapOrbBtn" class="mining-orb" aria-label="Tap to mine coins">
+              <div class="orb-inner">
+                <div class="orb-core">
+                  <svg class="orb-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="url(#orbGrad)" stroke="none"/>
+                    <defs>
+                      <linearGradient id="orbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#00e5ff"/>
+                        <stop offset="50%" stop-color="#3b82f6"/>
+                        <stop offset="100%" stop-color="#a855f7"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+                <span class="orb-hint">TAP TO MINE</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- SPECIAL BANNER: EVERY CLICK SHOW ADS (প্রতি ক্লিকে স্ক্রিন এড) -->
+        <div class="every-click-banner glass-card" id="bannerEveryClickAd">
+          <div class="every-click-left">
+            <span class="live-pulse-badge">🔴 INSTANT SCREEN AD</span>
+            <h3>Every Click Show Ads</h3>
+            <p>প্রতি ক্লিকে সাথে সাথে স্ক্রিন এড দেখাবে এবং ২০০ কয়েন পাবেন!</p>
+          </div>
+          <button class="btn-fire-pulse" id="btnEveryClickAd">
+            <span>Show Ad Now</span>
+            <span class="coin-gain-tag">+200</span>
+          </button>
+        </div>
+
+        <!-- High eCPM Monetag Quick Actions Grid -->
+        <div class="reward-triggers-grid">
+          <!-- Extra Button 1: Instant Screen Ad 1 -->
+          <div class="reward-trigger-card glass-card glow-on-hover" id="triggerScreenAd1">
+            <div class="trigger-badge instant-badge">INSTANT SCREEN</div>
+            <div class="trigger-icon-circle bg-gradient-amber">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-6l-7 4V7z"/>
+              </svg>
+            </div>
+            <div class="trigger-details">
+              <h4>Screen Ad 1 (ভিডিও এড)</h4>
+              <p>সরাসরি ফুলস্ক্রিন ভিডিও এড ওপেন হবে (০ সেকেন্ড অপেক্ষা)।</p>
+              <div class="yield-tag">+350 Coins Instant</div>
+            </div>
+            <button class="action-btn-pill btn-gold" id="btnScreenAd1">
+              <span>Watch Screen Ad</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+
+          <!-- Extra Button 2: Fast Screen Ad 2 -->
+          <div class="reward-trigger-card glass-card glow-on-hover" id="triggerScreenAd2">
+            <div class="trigger-badge direct-badge">FAST 5s AD</div>
+            <div class="trigger-icon-circle bg-purple-glow">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/>
+              </svg>
+            </div>
+            <div class="trigger-details">
+              <h4>Fast Screen Ad 2 (৫ সেকেন্ড)</h4>
+              <p>দ্রুত ৫ সেকেন্ডের স্ক্রিন এড দেখে রিওয়ার্ড নিন।</p>
+              <div class="yield-tag purple-yield">+500 Coins + 2 Gems</div>
+            </div>
+            <button class="action-btn-pill btn-cyan" id="btnScreenAd2">
+              <span>Show 5s Ad</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+
+          <!-- Button 3: Turbo 2x Multiplier -->
+          <div class="reward-trigger-card glass-card glow-on-hover" id="triggerTurboBoost">
+            <div class="trigger-badge">HIGH eCPM</div>
+            <div class="trigger-icon-circle bg-gradient-amber">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="trigger-details">
+              <h4>Turbo 2x Mining Boost</h4>
+              <p>Watch Monetag ad to double tapping mining speed.</p>
+              <div class="yield-tag">+500 Bonus Coins</div>
+            </div>
+            <button class="action-btn-pill btn-primary" id="btnWatchTurbo">
+              <span>Watch Ad</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+
+          <!-- Button 4: Direct Monetag Rewarded Video -->
+          <div class="reward-trigger-card glass-card glow-on-hover" id="triggerMonetagRewarded">
+            <div class="trigger-badge hot-badge">TOP REWARD</div>
+            <div class="trigger-icon-circle bg-purple-glow">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
+            <div class="trigger-details">
+              <h4>Monetag Full Rewarded Ad</h4>
+              <p>Watch full sponsored screen ad to claim 1,000 coins.</p>
+              <div class="yield-tag purple-yield">+1,000 Coins + 5 Gems</div>
+            </div>
+            <button class="action-btn-pill btn-gold" id="btnMonetagRewarded">
+              <span>Claim Ad</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+
+          <!-- Button 5: Monetag High eCPM Direct Link / SmartLink Task -->
+          <div class="reward-trigger-card glass-card glow-on-hover" id="triggerDirectLink">
+            <div class="trigger-badge direct-badge">DIRECT LINK ($20+ eCPM)</div>
+            <div class="trigger-icon-circle bg-gradient-cyan">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+              </svg>
+            </div>
+            <div class="trigger-details">
+              <h4>Monetag SmartLink Screen Task</h4>
+              <p>Open sponsored link & watch screen ad for high yield.</p>
+              <div class="yield-tag cyan-yield">+2,500 Coins (Super Drop)</div>
+            </div>
+            <button class="action-btn-pill btn-cyan" id="btnMonetagDirectLink">
+              <span>Open Ad Link</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M5 13h11.86l-5.43 5.43 1.42 1.42L21.14 12l-8.29-8.29-1.42 1.42L16.86 11H5v2z"/></svg>
+            </button>
+          </div>
+
+          <!-- Button 6: Instant Full Energy Refill -->
+          <div class="reward-trigger-card glass-card" id="triggerEnergyRefill">
+            <div class="trigger-icon-circle bg-emerald-glow">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5h-2v-5h2zm0-7h-2V7h2z"/>
+              </svg>
+            </div>
+            <div class="trigger-details">
+              <h4>Instant Full Energy</h4>
+              <p>Refill 100% stamina immediately via Monetag screen ad.</p>
+              <div class="yield-tag green-yield">100/100 Energy Refill</div>
+            </div>
+            <button class="action-btn-pill btn-secondary" id="btnWatchEnergy">
+              <span>Refill</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: AD VAULT (HIGH eCPM REWARDS & OPTIMIZED PLACEMENTS) -->
+      <section id="viewVault" class="app-view">
+        <div class="view-header-block">
+          <h2 class="section-title">Sponsored Ad Vault</h2>
+          <p class="section-subtitle">Optimized placement yields high-value tokens & maximum network eCPM</p>
+        </div>
+
+        <!-- Strategy Notice: Why this maximizes eCPM -->
+        <div class="ecpm-strategy-banner glass-card">
+          <div class="strategy-icon">💡</div>
+          <div class="strategy-content">
+            <strong>Publisher eCPM Optimizer Active</strong>
+            <p>Non-intrusive, consented rewarded ads provide 5x higher eCPM than banners while maintaining 95%+ completion rate.</p>
+          </div>
+        </div>
+
+        <!-- Grid of Rewarded Ad Placements -->
+        <div class="vault-grid">
+          <!-- Placement 1: Lucky Spin Wheel -->
+          <div class="vault-card glass-card featured-vault-card">
+            <div class="vault-badge hot-badge">TOP YIELD</div>
+            <div class="vault-card-body">
+              <div class="vault-icon-box bg-purple-glow">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a10 10 0 0 1 10 10M12 2v10l7 7M12 12l-7 7"/>
+                </svg>
+              </div>
+              <div class="vault-card-info">
+                <h3>Lucky Wheel Spin</h3>
+                <p>Spin for up to 10,000 Coins & 50 Rare Gems</p>
+                <div class="placement-meta">
+                  <span class="meta-tag">Format: Rewarded Video</span>
+                  <span class="meta-tag green-tag">High Completion</span>
+                </div>
+              </div>
+            </div>
+            <div class="vault-card-action">
+              <button class="btn-gradient-gold full-width-btn" id="btnOpenSpinWheel">
+                <span>Unlock Free Spin (Watch Ad)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Placement 2: Mystery Crypto Chest -->
+          <div class="vault-card glass-card">
+            <div class="vault-card-body">
+              <div class="vault-icon-box bg-cyan-glow">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                  <path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>
+                </svg>
+              </div>
+              <div class="vault-card-info">
+                <h3>Mystery Chest</h3>
+                <p>Guaranteed 1,000 Coins + Streak Shield</p>
+                <div class="cooldown-row">
+                  <span class="cooldown-label">Cooldown:</span>
+                  <span class="cooldown-timer" id="chestCooldown">Ready</span>
+                </div>
+              </div>
+            </div>
+            <button class="btn-vault-action" id="btnUnlockChest">
+              <span>Claim Chest</span>
+            </button>
+          </div>
+
+          <!-- Placement 3: Daily Streak Multiplier -->
+          <div class="vault-card glass-card">
+            <div class="vault-card-body">
+              <div class="vault-icon-box bg-amber-glow">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+                  <path d="M12 2c-4 4.5-6 8-6 11a6 6 0 0 0 12 0c0-3-2-6.5-6-11zm0 15a3 3 0 0 1-3-3c0-1.5 1-3 3-5 2 2 3 3.5 3 5a3 3 0 0 1-3 3z"/>
+                </svg>
+              </div>
+              <div class="vault-card-info">
+                <h3>7-Day Streak Booster</h3>
+                <p>Protect streak & triple today's daily login bonus</p>
+                <div class="streak-dots">
+                  <span class="dot active"></span>
+                  <span class="dot active"></span>
+                  <span class="dot active"></span>
+                  <span class="dot current">4</span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                </div>
+              </div>
+            </div>
+            <button class="btn-vault-action" id="btnStreakBooster">
+              <span>Triple Bonus (Ad)</span>
+            </button>
+          </div>
+
+          <!-- Placement 4: In-Page Push / Sponsored Offer Card -->
+          <div class="native-sponsored-card glass-card" id="nativeSponsoredCard">
+            <div class="sponsored-label">SPONSORED HIGHLIGHT • MONETAG PARTNER</div>
+            <div class="sponsored-body">
+              <div class="sponsored-thumb">🚀</div>
+              <div class="sponsored-text">
+                <h4>Join Official Telegram Channel</h4>
+                <p>Get exclusive promo codes & instant +5,000 Coin drop.</p>
+              </div>
+              <button class="btn-micro" id="btnSponsoredAction">Visit</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: AD ENGINE & LIVE MONETAG CONFIGURATOR -->
+      <section id="viewConfig" class="app-view">
+        <div class="view-header-block">
+          <h2 class="section-title">Ad Engine & Analytics</h2>
+          <p class="section-subtitle">Real-time eCPM telemetry, Monetag SDK toggle & ad zone inspector</p>
+        </div>
+
+        <!-- Telemetry Stats Cards -->
+        <div class="telemetry-grid">
+          <div class="telemetry-card glass-card">
+            <span class="telemetry-title">Estimated eCPM</span>
+            <div class="telemetry-num" id="telemetryEcpm">$21.50</div>
+            <span class="telemetry-sub green-sub">▲ 14.8% vs average</span>
+          </div>
+          <div class="telemetry-card glass-card">
+            <span class="telemetry-title">Impressions</span>
+            <div class="telemetry-num" id="telemetryImpressions">0</div>
+            <span class="telemetry-sub">Total Watched</span>
+          </div>
+          <div class="telemetry-card glass-card">
+            <span class="telemetry-title">Completion Rate</span>
+            <div class="telemetry-num" id="telemetryCompletion">100%</div>
+            <span class="telemetry-sub green-sub">Optimal tier</span>
+          </div>
+          <div class="telemetry-card glass-card">
+            <span class="telemetry-title">Est. Earnings</span>
+            <div class="telemetry-num gold-num" id="telemetryEarnings">$0.00</div>
+            <span class="telemetry-sub">Live simulation</span>
+          </div>
+        </div>
+
+        <!-- Ad Mode Switcher (Interactive Sandbox vs Live Monetag Tag) -->
+        <div class="config-panel glass-card">
+          <div class="config-header">
+            <h3>Ad Delivery Engine</h3>
+            <span class="status-indicator live" id="engineStatusTag">SIMULATOR ACTIVE</span>
+          </div>
+
+          <p class="config-desc">
+            Toggle between the built-in <strong>Interactive Simulator</strong> (safely test rewarded flows & haptics without self-clicking) and <strong>Live Monetag SDK</strong> (production monetization).
+          </p>
+
+          <div class="radio-pill-group">
+            <label class="radio-pill-label">
+              <input type="radio" name="adMode" value="simulated" checked id="radioModeSim">
+              <span class="pill-btn">Interactive Simulator (Safe)</span>
+            </label>
+            <label class="radio-pill-label">
+              <input type="radio" name="adMode" value="monetag" id="radioModeMonetag">
+              <span class="pill-btn">Monetag Live SDK</span>
+            </label>
+            <label class="radio-pill-label">
+              <input type="radio" name="adMode" value="adsgram" id="radioModeAdsgram">
+              <span class="pill-btn">Adsgram Network</span>
+            </label>
+          </div>
+
+          <!-- Monetag Zone Settings (Visible when Monetag selected) -->
+          <div class="zone-inputs-group" id="zoneInputsGroup">
+            <div class="input-field-group">
+              <label for="monetagZoneId">Monetag Rewarded Zone Tag URL / ID:</label>
+              <input type="text" id="monetagZoneId" placeholder="e.g. //niphaumeenses.net/400/1234567 or Zone ID" class="styled-input">
+              <span class="input-helper">Paste your Monetag In-Page Push or Vignette / Rewarded Interstitial tag.</span>
+            </div>
+
+            <div class="input-field-group">
+              <label for="adsgramBlockId">Adsgram Block ID (Optional TMA Rewarded):</label>
+              <input type="text" id="adsgramBlockId" placeholder="e.g. 1234 (Adsgram Block ID)" class="styled-input">
+            </div>
+
+            <button class="btn-primary full-width-btn" id="btnSaveAdConfig">
+              Save Ad Config
+            </button>
+          </div>
+        </div>
+
+        <!-- Monetag Optimization Best Practices Guide -->
+        <div class="tips-accordion glass-card">
+          <h3>High eCPM Optimization Checklist</h3>
+          <ul class="tips-list">
+            <li>
+              <span class="check-icon">✓</span>
+              <div>
+                <strong>High Intent Value Exchange:</strong> Users gladly watch full 15-30s ads when rewarded with gameplay progression (2x mining, energy refill, wheel spins).
+              </div>
+            </li>
+            <li>
+              <span class="check-icon">✓</span>
+              <div>
+                <strong>Pacing & Frequency Capping:</strong> 60s - 120s cooldowns between rewarded sessions avoid audience fatigue and maintain top ad-tier bidding.
+              </div>
+            </li>
+            <li>
+              <span class="check-icon">✓</span>
+              <div>
+                <strong>Pre-Roll Priming:</strong> Countdown modal mentally primes the user, cutting premature bounce rates to under 2%.
+              </div>
+            </li>
+            <li>
+              <span class="check-icon">✓</span>
+              <div>
+                <strong>Anti-Fraud Verification:</strong> Validated ad durations and HMAC tokens prevent automated bot scrapers from polluting your publisher score.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- VIEW 4: SECURITY & TELEGRAM INTEGRITY SHIELD -->
+      <section id="viewSecurity" class="app-view">
+        <div class="view-header-block">
+          <h2 class="section-title">Security & Fraud Shield</h2>
+          <p class="section-subtitle">Telegram initData HMAC-SHA256 signature verification & tamper protection</p>
+        </div>
+
+        <!-- Security Status Banner -->
+        <div class="security-banner glass-card" id="securityBanner">
+          <div class="shield-icon-wrap shield-secure" id="shieldIconWrap">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="shield-status-info">
+            <h3 id="securityStatusTitle">Session Integrity Verified</h3>
+            <p id="securityStatusDesc">All reward nonces, cooldown timestamps, and client state are cryptographically sealed.</p>
+          </div>
+        </div>
+
+        <!-- Telegram WebApp initData Inspector -->
+        <div class="init-data-box glass-card">
+          <div class="init-data-header">
+            <h4>Telegram WebApp initData Protocol</h4>
+            <span class="badge-cyan" id="tgInitStatus">Telegram Native</span>
+          </div>
+
+          <div class="raw-data-viewer" id="initDataDump">
+            <div class="data-row">
+              <span class="d-key">user:</span>
+              <span class="d-val" id="dUser">{"id": 984512401, "first_name": "Demo", ...}</span>
+            </div>
+            <div class="data-row">
+              <span class="d-key">auth_date:</span>
+              <span class="d-val" id="dAuthDate">1729440941</span>
+            </div>
+            <div class="data-row">
+              <span class="d-key">query_id:</span>
+              <span class="d-val" id="dQueryId">AAEk43gYAAAAACSneBh...</span>
+            </div>
+            <div class="data-row">
+              <span class="d-key">hash (HMAC-SHA256):</span>
+              <span class="d-val hash-val" id="dHash">7e81a3d240fbe3921...</span>
+            </div>
+          </div>
+
+          <div class="security-action-row">
+            <button class="btn-outline-cyan" id="btnVerifySignature">
+              Run Integrity Audit
+            </button>
+            <button class="btn-outline-amber" id="btnSimulateTamper">
+              Test Tamper Detection
+            </button>
+          </div>
+        </div>
+
+        <!-- Security Architecture Features Grid -->
+        <div class="security-features-list">
+          <div class="feature-item glass-card">
+            <div class="feat-icon">🔐</div>
+            <div class="feat-body">
+              <strong>Single-Use Cryptographic Nonce</strong>
+              <p>Every rewarded ad emits a unique UUIDv4 nonce that expires in 90 seconds. Prevents replay attacks on reward endpoints.</p>
+            </div>
+          </div>
+          <div class="feature-item glass-card">
+            <div class="feat-icon">⏱️</div>
+            <div class="feat-body">
+              <strong>Monotonic View Duration Check</strong>
+              <p>Ad completion requires a verified minimum playback duration (<code>performance.now()</code> elapsed >= 14,800ms). Skips and instant devtool closures are rejected.</p>
+            </div>
+          </div>
+          <div class="feature-item glass-card">
+            <div class="feat-icon">🛡️</div>
+            <div class="feat-body">
+              <strong>Anti-DevTools & Memory Tampering</strong>
+              <p>Memory state is shadowed by an in-memory checksum hash. Unauthorized edits to balance variables trigger quarantine.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backend Verification Blueprint Code -->
+        <div class="backend-blueprint glass-card">
+          <div class="blueprint-header">
+            <h4>Backend Production HMAC Verification (Node.js)</h4>
+            <span class="badge-gold">Best Practice</span>
+          </div>
+          <p class="blueprint-desc">Never trust client-side coins! Always validate Telegram's signature on your server before dispensing prizes:</p>
+          <pre class="code-block"><code>const crypto = require('crypto');
+
+function verifyTelegramWebAppData(initData, botToken) {
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  params.delete('hash');
+
+  const dataCheckString = Array.from(params.entries())
+    .map(([key, val]) => `${key}=${val}`)
+    .sort()
+    .join('\n');
+
+  const secretKey = crypto.createHmac('sha256', 'WebAppData')
+    .update(botToken)
+    .digest();
+
+  const calculatedHash = crypto.createHmac('sha256', secretKey)
+    .update(dataCheckString)
+    .digest('hex');
+
+  return calculatedHash === hash;
+}</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation Bar (Telegram Mini App Style) -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-view="viewEarn" id="navEarn">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span>Mine</span>
+      </button>
+
+      <button class="nav-item" data-view="viewVault" id="navVault">
+        <div class="nav-badge-pill" id="vaultBadge">HOT</div>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Ad Vault</span>
+      </button>
+
+      <button class="nav-item" data-view="viewConfig" id="navConfig">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>eCPM Engine</span>
+      </button>
+
+      <button class="nav-item" data-view="viewSecurity" id="navSecurity">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>Security</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- MODAL 1: PRE-ROLL AD PRIMING MODAL (CRITICAL FOR 95%+ COMPLETION & HIGH eCPM) -->
+  <div class="modal-backdrop" id="preRollModal">
+    <div class="modal-card glass-card">
+      <div class="pre-roll-icon-ring">
+        <div class="circular-spinner"></div>
+        <span class="countdown-num" id="preRollTimer">3</span>
+      </div>
+      <h3 id="preRollTitle">Preparing High-Yield Reward...</h3>
+      <p id="preRollDesc">Watch the full sponsored message to unlock your <strong>Turbo 2x Boost</strong>.</p>
+      
+      <div class="reward-preview-box">
+        <div class="preview-item">
+          <span class="preview-label">Guaranteed Reward:</span>
+          <span class="preview-val gold-val" id="preRollRewardText">+500 Coins + 2x Turbo</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Estimated eCPM Value:</span>
+          <span class="preview-val green-val">$24.80 Tier-1</span>
+        </div>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="btn-text-secondary" id="btnCancelAd">Cancel</button>
+        <button class="btn-primary" id="btnProceedAd">Watch Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: INTERACTIVE AD SIMULATOR PLAYER (SAFELY TEST WITHOUT BAN RISKS) -->
+  <div class="modal-backdrop" id="adPlayerModal">
+    <div class="ad-player-container">
+      <div class="ad-player-header">
+        <div class="ad-sponsor-info">
+          <span class="ad-tag">SPONSORED AD</span>
+          <span class="ad-brand-name">Monetag Verified Partner</span>
+        </div>
+        <div class="ad-controls-right">
+          <button class="ad-sound-btn" id="adSoundToggle" aria-label="Toggle sound">🔊</button>
+          <div class="ad-countdown-pill" id="adTimerBadge">
+            <span>Reward in:</span>
+            <strong id="adSecondsLeft">15s</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video / Ad Creative Mockup Screen -->
+      <div class="ad-creative-screen">
+        <div class="ad-video-mockup" id="adVideoMockup">
+          <div class="ad-banner-visual">
+            <div class="ad-visual-graphic">💎</div>
+            <h2 class="ad-creative-headline">Telegram Toncoin Staking</h2>
+            <p class="ad-creative-body">Earn up to 24% APY securely on the TON Blockchain. Zero lockups, daily rewards.</p>
+            <div class="ad-cta-button">Install App & Claim $10 Bonus</div>
+          </div>
+          <!-- Progress bar on bottom of ad -->
+          <div class="ad-progress-bar-track">
+            <div class="ad-progress-bar-fill" id="adProgressFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ad-player-footer">
+        <span class="ad-footer-note">Keep this window open to receive your in-app reward.</span>
+        <button class="btn-skip-ad disabled" id="btnSkipAd" disabled>
+          Skip Ad (<span id="skipCountdown">15</span>s)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: LUCKY SPIN WHEEL (HIGH ENGAGEMENT REWARDED MECHANIC) -->
+  <div class="modal-backdrop" id="spinWheelModal">
+    <div class="modal-card glass-card wheel-modal-card">
+      <button class="modal-close-btn" id="btnCloseSpinWheel">✕</button>
+      <h3>Lucky Wheel of Fortune</h3>
+      <p class="wheel-subtitle">Sponsored spin powered by high eCPM rewarded video</p>
+
+      <div class="wheel-wrapper">
+        <div class="wheel-pointer">▼</div>
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+      </div>
+
+      <div class="wheel-actions">
+        <button class="btn-gradient-gold full-width-btn" id="btnSpinNow">
+          <span>Watch Ad & Spin (Free)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: REWARD UNLOCKED CELEBRATION MODAL -->
+  <div class="modal-backdrop" id="rewardClaimModal">
+    <div class="modal-card glass-card celebration-card">
+      <div class="celebration-trophy">🏆</div>
+      <h3 id="claimModalTitle">Reward Unlocked!</h3>
+      <div class="claim-amount-pill" id="claimModalAmount">+500 Coins</div>
+      <p id="claimModalDesc">Your account has been credited and signed with cryptographic nonce.</p>
+      
+      <div class="security-receipt">
+        <span class="receipt-label">Receipt Nonce:</span>
+        <code id="claimNonceCode">a94f...ec21</code>
+      </div>
+
+      <button class="btn-primary full-width-btn" id="btnDismissReward">
+        Awesome!
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 5: MONETAG QUICK CONFIGURATION MODAL (মনিট্যাগ এড সেটআপ) -->
+  <div class="modal-backdrop" id="monetagSetupModal">
+    <div class="modal-card glass-card config-modal-card">
+      <button class="modal-close-btn" id="btnCloseMonetagSetup">✕</button>
+      <div class="monetag-logo-header">
+        <span class="monetag-brand-tag">MONETAG.COM</span>
+        <h3>Monetag Ad Configuration</h3>
+        <p class="monetag-subtitle">আপনার মনিট্যাগ একাউন্টের Direct Link ও Zone Tag নিচে বসিয়ে সেভ করুন।</p>
+      </div>
+
+      <div class="monetag-form">
+        <!-- 1. Direct Link / SmartLink -->
+        <div class="input-field-group">
+          <label for="modalDirectLink">
+            <strong>Monetag SmartLink / Direct Link URL</strong> (সবচেয়ে বেশি eCPM):
+          </label>
+          <input type="text" id="modalDirectLink" placeholder="https://otieuwai.net/4/XXXXXXX" class="styled-input">
+          <span class="input-helper">Monetag ড্যাশবোর্ড থেকে আপনার Direct Link URL টি এখানে পেস্ট করুন।</span>
+        </div>
+
+        <!-- 2. Rewarded / Interstitial Zone Tag -->
+        <div class="input-field-group">
+          <label for="modalZoneId">
+            <strong>Monetag Rewarded / Interstitial Zone Tag / Script</strong>:
+          </label>
+          <input type="text" id="modalZoneId" placeholder="e.g. //niphaumeenses.net/401/1234567 বা Zone ID" class="styled-input">
+          <span class="input-helper">Vignette বা Rewarded Interstitial Tag URL / ID</span>
+        </div>
+
+        <!-- 3. Mode Toggle -->
+        <div class="input-field-group">
+          <label><strong>Ad Delivery Mode (এড মোড নির্বাচন করুন):</strong></label>
+          <div class="mode-select-row">
+            <label class="mode-option">
+              <input type="radio" name="modalAdMode" value="monetag" id="modeLiveMonetag" checked>
+              <span>🚀 Live Monetag Ads (রিয়েল এড)</span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="modalAdMode" value="simulated" id="modeTestSim">
+              <span>🧪 Safe Sandbox (টেস্ট মোড)</span>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn-primary full-width-btn" id="btnSaveMonetagModal">
+          Save Monetag Settings & Activate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: WITHDRAWAL & CASHOUT MODAL (উইথড্রয়াল) -->
+  <div class="modal-backdrop" id="withdrawModal">
+    <div class="modal-card glass-card withdraw-modal-card">
+      <button class="modal-close-btn" id="btnCloseWithdraw">✕</button>
+      <div class="withdraw-header">
+        <span class="withdraw-icon">💳</span>
+        <h3>Withdraw Mined Coins</h3>
+        <p class="withdraw-sub">Convert your mined coins to TON / USDT (TON Blockchain)</p>
+      </div>
+
+      <div class="withdraw-balance-box">
+        <span class="w-label">Current Balance:</span>
+        <span class="w-balance" id="withdrawCoinDisplay">1,250 Coins ($0.62)</span>
+      </div>
+
+      <div class="withdraw-criteria-card">
+        <div class="criteria-row">
+          <span>Min. Payout:</span>
+          <strong>5,000 Coins (~$2.50 USDT)</strong>
+        </div>
+        <div class="criteria-row">
+          <span>Monetag Ads Watched:</span>
+          <strong id="withdrawAdsProgress">0 / 5 Required</strong>
+        </div>
+        <div class="progress-bar-small">
+          <div class="progress-fill-small" id="withdrawProgressFill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="withdraw-inputs">
+        <label for="withdrawTonAddress">Your TON Wallet Address:</label>
+        <input type="text" id="withdrawTonAddress" placeholder="UQ... (TON Wallet Address)" class="styled-input">
+      </div>
+
+      <button class="btn-gradient-gold full-width-btn" id="btnSubmitWithdraw">
+        Request Cashout (5,000 Coins)
+      </button>
+
+      <div class="withdraw-boost-ad">
+        <p>Unlock withdrawal quota faster by watching rewarded ads:</p>
+        <button class="action-btn-pill btn-cyan" id="btnWithdrawWatchAd">
+          <span>Watch Monetag Ad (+1 Progress)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="security.js"></script>
+  <script src="ad-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
